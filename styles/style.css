@@ -1,0 +1,54 @@
+/* Sidebar Background Color */
+[data-testid="stSidebar"] {
+    background-color: #1e293b !important;
+}
+
+/* Sidebar Text & Links Fix */
+[data-testid="stSidebar"] *, 
+[data-testid="stSidebar"] a, 
+[data-testid="stSidebar"] p, 
+[data-testid="stSidebar"] span, 
+[data-testid="stSidebar"] div,
+[data-testid="stSidebar"] label {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    line-height: 1.8 !important; /* Text ekvar ek yenar nahi */
+}
+
+/* Sidebar Navigation Items Space & Gap Fix */
+[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div {
+    margin-bottom: 8px !important; /* Items madhe space */
+}
+
+/* Page Links Spacing & Padding */
+[data-testid="stSidebar"] a[data-testid="stPageLink-NavLink"] {
+    padding: 8px 12px !important;
+    margin-bottom: 4px !important;
+    border-radius: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+[data-testid="stSidebar"] a[data-testid="stPageLink-NavLink"]:hover {
+    background-color: #334155 !important;
+}
+
+/* Section Titles (MAIN NAVIGATION, etc.) Spacing */
+.sidebar-section-title {
+    color: #38bdf8 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.8px !important;
+    margin-top: 20px !important;
+    margin-bottom: 10px !important;
+    text-transform: uppercase !important;
+}
+
+/* Profile Card Styling */
+.user-profile-card {
+    background: #334155 !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    text-align: center !important;
+    margin-bottom: 15px !important;
+}
