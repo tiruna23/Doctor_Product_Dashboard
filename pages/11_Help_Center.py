@@ -2,6 +2,10 @@ import streamlit as st
 
 st.set_page_config(page_title="Help Center", page_icon="❓", layout="wide")
 
+# ----------------- 🛡️ LOGIN GUARD -----------------
+if not st.session_state.get("logged_in", False):
+    st.switch_page("app.py")
+
 # Custom Styling matching Theme & Dark Navy Blue Sidebar
 st.markdown("""
 <style>
@@ -15,13 +19,36 @@ st.markdown("""
         color: #f1f5f9 !important;
     }
     
+    /* Red Logout Button Styling */
+    [data-testid="stSidebar"] .stButton > button {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+        border: none !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background-color: #dc2626 !important;
+    }
+    
     .help-card { background: #ffffff; border-radius: 10px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SIDEBAR NAVIGATION -----------------
+# ----------------- UNIFORM SIDEBAR NAVIGATION -----------------
 with st.sidebar:
-    st.markdown("### 🏥 MediCare")
+    # Standard Blue MediCare Logo
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="24" rx="6" fill="#2563EB"/>
+            <path d="M8 12H16M12 8V16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <h2 style="color: white; margin: 0; font-size: 22px; font-weight: 700;">MediCare</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.caption(f"Logged in: **{st.session_state.get('current_user', 'Admin')}**")
     st.write("")
     st.caption("MAIN MENU")
     
@@ -37,12 +64,17 @@ with st.sidebar:
     st.page_link("pages/9_Billing_System.py", label="Billing System", icon="💳")
     st.page_link("pages/10_Settings.py", label="Settings", icon="⚙️")
     st.page_link("pages/11_Help_Center.py", label="Help Center", icon="❓")
+    
+    st.divider()
+    
+    # 🚪 FAST WORKING LOGOUT BUTTON
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.current_user = None
+        st.switch_page("app.py")
 
 # Header
 st.markdown("## ❓ Help & Support Center")
-
-# Search Bar
-st.text_input("Search FAQs or Help Topics", placeholder="How to add a new doctor, book appointment...", label_visibility="collapsed")
 st.write("")
 
 # FAQs Section

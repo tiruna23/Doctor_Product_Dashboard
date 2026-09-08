@@ -3,7 +3,11 @@ import pandas as pd
 
 st.set_page_config(page_title="Patient Records", page_icon="👤", layout="wide")
 
-# Custom CSS matching Image #4 & Dark Navy Blue Sidebar
+# ----------------- 🛡️ LOGIN GUARD -----------------
+if not st.session_state.get("logged_in", False):
+    st.switch_page("app.py")
+
+# ----------------- UNIFORM SIDEBAR & CUSTOM CSS -----------------
 st.markdown("""
 <style>
     .stApp { background-color: #f8fafc; }
@@ -16,6 +20,19 @@ st.markdown("""
         color: #f1f5f9 !important;
     }
     
+    /* Red Logout Button Styling */
+    [data-testid="stSidebar"] .stButton > button {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+        border: none !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background-color: #dc2626 !important;
+    }
+    
+    /* Page Specific Badges */
     .badge-admitted { background-color: #fef3c7; color: #d97706; padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
     .badge-outpatient { background-color: #dbeafe; color: #2563eb; padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
     .badge-icu { background-color: #fee2e2; color: #dc2626; padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
@@ -23,9 +40,20 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SIDEBAR NAVIGATION -----------------
+# ----------------- UNIFORM SIDEBAR NAVIGATION -----------------
 with st.sidebar:
-    st.markdown("### 🏥 MediCare")
+    # Standard Blue MediCare Logo
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="24" rx="6" fill="#2563EB"/>
+            <path d="M8 12H16M12 8V16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <h2 style="color: white; margin: 0; font-size: 22px; font-weight: 700;">MediCare</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.caption(f"Logged in: **{st.session_state.get('current_user', 'Admin')}**")
     st.write("")
     st.caption("MAIN MENU")
     
@@ -41,6 +69,14 @@ with st.sidebar:
     st.page_link("pages/9_Billing_System.py", label="Billing System", icon="💳")
     st.page_link("pages/10_Settings.py", label="Settings", icon="⚙️")
     st.page_link("pages/11_Help_Center.py", label="Help Center", icon="❓")
+    
+    st.divider()
+    
+    # 🚪 FAST WORKING LOGOUT BUTTON
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.current_user = None
+        st.switch_page("app.py")
 
 # Session State for Patient Data (Master Data)
 if "patients_master" not in st.session_state:
@@ -171,4 +207,4 @@ for idx, pat in enumerate(filtered_patients):
         st.success(f"{pat['name']} Record Deleted!")
         st.rerun()
 
-st.caption(f"Showing {len(filtered_patients)} to {len(st.session_state.patients_master)} Patient Records")
+st.caption(f"Showing {len(filtered_patients)} of {len(st.session_state.patients_master)} Patient Records")

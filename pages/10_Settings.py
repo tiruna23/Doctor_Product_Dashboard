@@ -6,6 +6,10 @@ st.set_page_config(
     layout="wide"
 )
 
+# ----------------- 🛡️ LOGIN GUARD -----------------
+if not st.session_state.get("logged_in", False):
+    st.switch_page("app.py")
+
 # Custom CSS matching Theme & Dark Navy Blue Sidebar
 st.markdown("""
 <style>
@@ -19,19 +23,59 @@ st.markdown("""
         color: #f1f5f9 !important;
     }
     
-    .section-box {
-        background: #ffffff;
-        border-radius: 10px;
-        padding: 20px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 20px;
+    /* Red Logout Button Styling */
+    [data-testid="stSidebar"] .stButton > button {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+        border: none !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background-color: #dc2626 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SIDEBAR NAVIGATION -----------------
+# ----------------- ⚙️ INITIALIZE SETTINGS IN SESSION STATE -----------------
+if "settings_config" not in st.session_state:
+    st.session_state.settings_config = {
+        "h_name": "MediCare Health Institute",
+        "h_reg": "REG-2026-MH-9812",
+        "h_addr": "123 Healthcare Ave, Metro City",
+        "opd_open": "09:00",
+        "opd_close": "20:00",
+        "emergency": "24/7 Active",
+        "beds_capacity": 200,
+        "departments": ["Cardiology", "Emergency", "ICU"],
+        "rbac_role": "Admin",
+        "rbac_edit_patient": True,
+        "2fa_enabled": True,
+        "session_timeout": 30,
+        "email_alerts": True,
+        "sms_alerts": True,
+        "backup_freq": "Daily",
+        "theme": "Dark Navy Blue (Default)",
+        "currency": "₹",
+        "gst_rate": 18.0,
+        "low_stock_limit": 10
+    }
+
+cfg = st.session_state.settings_config
+
+# ----------------- UNIFORM SIDEBAR NAVIGATION -----------------
 with st.sidebar:
-    st.markdown("### 🏥 MediCare")
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="24" rx="6" fill="#2563EB"/>
+            <path d="M8 12H16M12 8V16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <h2 style="color: white; margin: 0; font-size: 22px; font-weight: 700;">MediCare</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.caption(f"Logged in: **{st.session_state.get('current_user', 'Admin')}**")
     st.write("")
     st.caption("MAIN MENU")
     
@@ -47,126 +91,123 @@ with st.sidebar:
     st.page_link("pages/9_Billing_System.py", label="Billing System", icon="💳")
     st.page_link("pages/10_Settings.py", label="Settings", icon="⚙️")
     st.page_link("pages/11_Help_Center.py", label="Help Center", icon="❓")
+    
+    st.divider()
+    
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.current_user = None
+        st.switch_page("app.py")
 
-st.title("⚙️ System Settings")
-st.caption("Manage all 12 core hospital settings sequentially.")
+st.title("⚙️ Functional System Settings")
+st.caption("10 Functional Hospital Configuration Settings.")
 st.write("")
 
 # 1. Hospital Profile Information
 st.markdown("### 1. Hospital Profile Information")
-st.text_input("Hospital Name", value="MediCare Health Institute", key="s1_name")
-st.text_input("Registration / License Number", value="REG-2026-MH-9812", key="s1_reg")
-st.text_area("Official Address", value="123 Healthcare Ave, Metro City", key="s1_addr")
-if st.button("Save Profile Info", key="btn1"):
-    st.success("Hospital Profile updated!")
+h_name = st.text_input("Hospital Name", value=cfg["h_name"])
+h_reg = st.text_input("Registration / License Number", value=cfg["h_reg"])
+h_addr = st.text_area("Official Address", value=cfg["h_addr"])
+if st.button("💾 Save Profile Info", key="b1"):
+    cfg["h_name"] = h_name
+    cfg["h_reg"] = h_reg
+    cfg["h_addr"] = h_addr
+    st.success("Hospital Profile updated successfully in Session State!")
 
 st.divider()
 
-# 2. Operational Timings & Shifts
-st.markdown("### 2. Operational Timings & Shifts")
+# 2. Operational Timings
+st.markdown("### 2. Operational Timings & Emergency")
 c1, c2 = st.columns(2)
 with c1:
-    st.time_input("OPD Opening Time", key="s2_open")
-    st.time_input("OPD Closing Time", key="s2_close")
+    open_t = st.text_input("OPD Opening Hours", value=cfg["opd_open"])
+    close_t = st.text_input("OPD Closing Hours", value=cfg["opd_close"])
 with c2:
-    st.selectbox("Emergency Services Availability", ["24/7 Active", "Day Shift Only"], key="s2_emerg")
-    st.number_input("Shift Duration (Hours)", value=8, key="s2_shift")
-if st.button("Save Operational Timings", key="btn2"):
-    st.success("Timings updated!")
+    emerg = st.selectbox("Emergency Services Availability", ["24/7 Active", "Day Shift Only"], index=0 if cfg["emergency"] == "24/7 Active" else 1)
+if st.button("💾 Save Operational Timings", key="b2"):
+    cfg["opd_open"] = open_t
+    cfg["opd_close"] = close_t
+    cfg["emergency"] = emerg
+    st.success("Operational timings saved!")
 
 st.divider()
 
-# 3. Bed & Department Configuration
+# 3. Bed Capacity & Department Config
 st.markdown("### 3. Bed & Department Configuration")
-st.number_input("Total Hospital Bed Capacity", value=200, key="s3_beds")
-st.multiselect("Active Departments", ["Cardiology", "Neurology", "Orthopedics", "Pediatrics", "Emergency", "ICU"], default=["Cardiology", "Emergency", "ICU"], key="s3_deps")
-if st.button("Save Bed & Department Config", key="btn3"):
-    st.success("Department configuration saved!")
+beds = st.number_input("Total Hospital Bed Capacity", value=cfg["beds_capacity"], step=10)
+deps = st.multiselect("Active Departments", ["Cardiology", "Neurology", "Orthopedics", "Pediatrics", "Emergency", "ICU"], default=cfg["departments"])
+if st.button("💾 Save Bed & Dept Config", key="b3"):
+    cfg["beds_capacity"] = beds
+    cfg["departments"] = deps
+    st.success("Department and Bed configuration updated!")
 
 st.divider()
 
-# 4. User Access & Roles (RBAC)
-st.markdown("### 4. User Access & Roles (RBAC)")
-st.selectbox("Select Role to Edit Permissions", ["Admin", "Doctor", "Nurse", "Receptionist", "Pharmacist"], key="s4_role")
-st.checkbox("Allow Patient Data Editing", value=True, key="s4_p1")
-st.checkbox("Allow Financial Report Viewing", value=False, key="s4_p2")
-st.checkbox("Allow Inventory Restocking", value=True, key="s4_p3")
-if st.button("Save Role Permissions", key="btn4"):
-    st.success("Permissions updated!")
+# 4. User Roles & Access Control (RBAC)
+st.markdown("### 4. User Access Controls (RBAC)")
+role = st.selectbox("Select Role to Edit Permissions", ["Admin", "Doctor", "Nurse", "Receptionist", "Pharmacist"])
+p_edit = st.checkbox("Allow Patient Data Editing", value=cfg["rbac_edit_patient"])
+if st.button("💾 Save Role Permissions", key="b4"):
+    cfg["rbac_role"] = role
+    cfg["rbac_edit_patient"] = p_edit
+    st.success(f"Permissions for role '{role}' updated!")
 
 st.divider()
 
-# 5. Security & Authentication
-st.markdown("### 5. Security & Authentication")
-st.checkbox("Enable Two-Factor Authentication (2FA)", value=True, key="s5_2fa")
-st.number_input("Session Timeout (Minutes)", value=30, key="s5_timeout")
-st.text_input("Change Admin Password", type="password", key="s5_pass")
-if st.button("Save Security Settings", key="btn5"):
+# 5. Security Settings
+st.markdown("### 5. Security & Session Settings")
+two_fa = st.checkbox("Enable Two-Factor Authentication (2FA)", value=cfg["2fa_enabled"])
+timeout = st.number_input("Session Timeout (Minutes)", value=cfg["session_timeout"])
+if st.button("💾 Save Security Settings", key="b5"):
+    cfg["2fa_enabled"] = two_fa
+    cfg["session_timeout"] = timeout
     st.success("Security settings updated!")
 
 st.divider()
 
-# 6. Audit & Activity Logs
-st.markdown("### 6. Audit & Activity Logs")
-st.checkbox("Log User Login Activities", value=True, key="s6_log1")
-st.checkbox("Log Data Modification/Deletion Actions", value=True, key="s6_log2")
-st.button("Export Audit Logs (.CSV)", key="btn6_exp")
-
-st.divider()
-
-# 7. Notification & Alert Settings
-st.markdown("### 7. Notification & Alert Settings")
-st.checkbox("Email Alerts for Low Pharmacy Stock", value=True, key="s7_n1")
-st.checkbox("SMS Alerts for Appointment Confirmation", value=True, key="s7_n2")
-st.checkbox("Emergency Bed Full Alerts", value=True, key="s7_n3")
-if st.button("Save Notification Settings", key="btn7"):
+# 6. Notifications & Alert Preferences
+st.markdown("### 6. Notifications & Alert Preferences")
+n_email = st.checkbox("Email Alerts for Low Stock & System Updates", value=cfg["email_alerts"])
+n_sms = st.checkbox("SMS Alerts for Patient Appointments", value=cfg["sms_alerts"])
+if st.button("💾 Save Notification Settings", key="b6"):
+    cfg["email_alerts"] = n_email
+    cfg["sms_alerts"] = n_sms
     st.success("Notification preferences saved!")
 
 st.divider()
 
-# 8. Database Backup & Restore
-st.markdown("### 8. Database Backup & Restore")
-c1, c2 = st.columns(2)
-with c1:
-    st.selectbox("Auto Backup Frequency", ["Daily", "Weekly", "Monthly"], key="s8_freq")
-    st.button("Backup Database Now", type="primary", key="btn8_bk")
-with c2:
-    st.file_uploader("Restore Database File (.db / .sql)", key="s8_file")
+# 7. Database Backup Settings
+st.markdown("### 7. Database Backup & Management")
+freq = st.selectbox("Auto Backup Frequency", ["Daily", "Weekly", "Monthly"], index=["Daily", "Weekly", "Monthly"].index(cfg["backup_freq"]))
+if st.button("💾 Save Backup Schedule", key="b7"):
+    cfg["backup_freq"] = freq
+    st.success(f"Auto-backup frequency set to {freq}!")
 
 st.divider()
 
-# 9. Theme & Display Customization
-st.markdown("### 9. Theme & Display Customization")
-st.selectbox("System Interface Theme", ["Dark Navy Blue (Default)", "Light Mode", "High Contrast"], key="s9_theme")
-st.selectbox("Default Language", ["English", "Marathi", "Hindi"], key="s9_lang")
-if st.button("Save Display Settings", key="btn9"):
-    st.success("Theme settings saved!")
+# 8. Billing, Currency & Taxes
+st.markdown("### 8. Billing, Currency & Taxes")
+curr = st.text_input("Currency Symbol", value=cfg["currency"])
+gst = st.number_input("Standard Tax / GST Rate (%)", value=cfg["gst_rate"])
+if st.button("💾 Save Billing Settings", key="b8"):
+    cfg["currency"] = curr
+    cfg["gst_rate"] = gst
+    st.success("Billing & Tax configurations updated!")
 
 st.divider()
 
-# 10. Billing, Taxes & Currency
-st.markdown("### 10. Billing, Taxes & Currency")
-st.text_input("Currency Symbol", value="₹", key="s10_curr")
-st.number_input("Standard GST / Tax Rate (%)", value=18.0, key="s10_tax")
-st.text_input("Tax Registration / GSTIN", value="27AAAAA0000A1Z5", key="s10_gst")
-if st.button("Save Billing Config", key="btn10"):
-    st.success("Billing settings saved!")
+# 9. Pharmacy & Stock Thresholds
+st.markdown("### 9. Pharmacy & Inventory Thresholds")
+stock_limit = st.number_input("Global Low Stock Alert Level (Units)", value=cfg["low_stock_limit"])
+if st.button("💾 Save Inventory Thresholds", key="b9"):
+    cfg["low_stock_limit"] = stock_limit
+    st.success(f"Low stock alert limit set to {stock_limit} units!")
 
 st.divider()
 
-# 11. Pharmacy & Inventory Thresholds
-st.markdown("### 11. Pharmacy & Inventory Thresholds")
-st.number_input("Global Low Stock Alert Level (Quantity)", value=10, key="s11_stock")
-st.checkbox("Auto-Mark Expired Medicines as Inactive", value=True, key="s11_exp")
-if st.button("Save Pharmacy Thresholds", key="btn11"):
-    st.success("Inventory thresholds saved!")
-
-st.divider()
-
-# 12. API & Third-Party Integrations
-st.markdown("### 12. API & Third-Party Integrations")
-st.text_input("SMS Gateway API Key", value="••••••••••••••••", type="password", key="s12_sms")
-st.text_input("Payment Gateway API Key", value="••••••••••••••••", type="password", key="s12_pay")
-st.checkbox("Enable WhatsApp Integration for Reports", value=False, key="s12_wa")
-if st.button("Save API Integrations", key="btn12"):
-    st.success("API Keys saved!")
+# 10. System UI Theme
+st.markdown("### 10. Interface Theme")
+sys_theme = st.selectbox("System Theme Preference", ["Dark Navy Blue (Default)", "Light Mode", "High Contrast"])
+if st.button("💾 Save Theme Settings", key="b10"):
+    cfg["theme"] = sys_theme
+    st.success("UI Theme preference saved!")

@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import os
+import json
+from datetime import datetime
 
 # Page Configuration
 st.set_page_config(
@@ -10,12 +12,43 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize Session States
-if "users_db" not in st.session_state:
-    st.session_state.users_db = {"admin": "admin123"}
+# ----------------- 💾 PERMANENT JSON USER DATABASE -----------------
+USER_FILE = "users_db.json"
+
+def load_users():
+    """JSON फाइलमधून युझर्स वाचणे (With Fallback)"""
+    if not os.path.exists(USER_FILE):
+        default_users = {"admin": "admin123"}
+        with open(USER_FILE, "w") as f:
+            json.dump(default_users, f, indent=4)
+        return default_users
+
+    try:
+        with open(USER_FILE, "r") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {"admin": "admin123"}
+    except (json.JSONDecodeError, Exception):
+        return {"admin": "admin123"}
+
+def save_user(username, password):
+    """नवीन युझर किंवा अपडेट केलेला पासवर्ड JSON मध्ये सेव्ह करणे"""
+    users = load_users()
+    users[username] = password
+    with open(USER_FILE, "w") as f:
+        json.dump(users, f, indent=4)
+
+# ----------------- 🔄 URL QUERY PARAMETERS AUTH CHECK -----------------
+# ब्राऊझर रिफ्रेश केला तरी URL वरून युझर ओळखणे
+query_params = st.query_params
+logged_in_user = query_params.get("user", None)
 
 if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+    if logged_in_user:
+        st.session_state.logged_in = True
+        st.session_state.current_user = logged_in_user
+    else:
+        st.session_state.logged_in = False
+        st.session_state.current_user = "Admin"
 
 # ----------------- MODERN CUSTOM CSS -----------------
 st.markdown("""
@@ -129,7 +162,6 @@ if not st.session_state.logged_in:
     _, center_col, _ = st.columns([1, 1.3, 1])
     
     with center_col:
-        # Start Single Floating Card
         st.markdown("""
         <div class="single-login-card">
             <div class="login-top-banner">
@@ -143,59 +175,65 @@ if not st.session_state.logged_in:
             <div style="padding: 25px 30px;">
         """, unsafe_allow_html=True)
         
-        # Form Content Area
         tab_login, tab_reg, tab_forgot = st.tabs(["🔑 Sign In", "📝 Create Account", "❓ Forgot Password"])
         
+        # 1. SIGN IN TAB
         with tab_login:
             with st.form("login_form"):
-                u_name = st.text_input("Username or Email", placeholder="admin")
-                u_pass = st.text_input("Password", type="password", placeholder="••••••••")
+                u_name = st.text_input("Username or Email", placeholder="admin").strip()
+                u_pass = st.text_input("Password", type="password", placeholder="••••••••").strip()
                 st.write("")
                 btn_login = st.form_submit_button("Sign In", type="primary", use_container_width=True)
                 
                 if btn_login:
-                    if u_name in st.session_state.users_db and st.session_state.users_db[u_name] == u_pass:
+                    users_db = load_users()
+                    if u_name in users_db and users_db[u_name] == u_pass:
                         st.session_state.logged_in = True
                         st.session_state.current_user = u_name
+                        # URL parameter सेव्ह करणे जेणेकरून रिफ्रेशवर सत्र टिकेल
+                        st.query_params["user"] = u_name
                         st.rerun()
                     else:
                         st.error("Invalid Username or Password!")
 
+        # 2. CREATE ACCOUNT TAB
         with tab_reg:
             with st.form("register_form"):
-                new_user = st.text_input("Choose Username")
-                new_pass = st.text_input("Choose Password", type="password")
-                confirm_pass = st.text_input("Confirm Password", type="password")
+                new_user = st.text_input("Choose Username").strip()
+                new_pass = st.text_input("Choose Password", type="password").strip()
+                confirm_pass = st.text_input("Confirm Password", type="password").strip()
                 btn_reg = st.form_submit_button("Register Account", use_container_width=True)
                 
                 if btn_reg:
+                    users_db = load_users()
                     if not new_user or not new_pass:
                         st.warning("All fields are required!")
-                    elif new_user in st.session_state.users_db:
+                    elif new_user in users_db:
                         st.error("Username already exists!")
                     elif new_pass != confirm_pass:
                         st.error("Passwords do not match!")
                     else:
-                        st.session_state.users_db[new_user] = new_pass
-                        st.success("Account created! Go to 'Sign In' tab.")
+                        save_user(new_user, new_pass)
+                        st.success("Account created successfully! Go to 'Sign In' tab.")
 
+        # 3. FORGOT PASSWORD TAB
         with tab_forgot:
             with st.form("forgot_form"):
-                forgot_user = st.text_input("Username")
-                reset_pass = st.text_input("New Password", type="password")
+                forgot_user = st.text_input("Username").strip()
+                reset_pass = st.text_input("New Password", type="password").strip()
                 btn_reset = st.form_submit_button("Reset Password", use_container_width=True)
                 
                 if btn_reset:
-                    if forgot_user in st.session_state.users_db:
+                    users_db = load_users()
+                    if forgot_user in users_db:
                         if reset_pass:
-                            st.session_state.users_db[forgot_user] = reset_pass
-                            st.success("Password reset successfully!")
+                            save_user(forgot_user, reset_pass)
+                            st.success("Password reset successfully! Go to 'Sign In' tab.")
                         else:
                             st.warning("Enter a new password.")
                     else:
                         st.error("Username not found!")
                         
-        # End Single Floating Card
         st.markdown("""
             </div>
         </div>
@@ -236,16 +274,32 @@ else:
         st.page_link("pages/11_Help_Center.py", label="Help Center", icon="❓")
         
         st.divider()
+        
+        # 🚪 DIRECT GUARANTEED LOGOUT
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.logged_in = False
+            st.session_state.current_user = None
+            # Logout करताना query parameter काढून टाकणे
+            st.query_params.clear()
             st.rerun()
+
+    # DYNAMIC GREETING AND DATE CALCULATION
+    current_hour = datetime.now().hour
+    if current_hour < 12:
+        greeting_text = "Good Morning"
+    elif 12 <= current_hour < 17:
+        greeting_text = "Good Afternoon"
+    else:
+        greeting_text = "Good Evening"
+
+    today_str = datetime.now().strftime("%d %b %Y, %A")
 
     h_col1, h_col2 = st.columns([3, 1])
     with h_col1:
-        st.markdown(f"## Good Morning, {st.session_state.get('current_user', 'Admin')} 👋")
+        st.markdown(f"## {greeting_text}, {st.session_state.get('current_user', 'Admin')} 👋")
         st.caption("Here's what's happening with your hospital today.")
     with h_col2:
-        st.markdown("<p style='text-align: right; color: #64748b; font-size: 13px; margin-top: 10px;'>25 Aug 2026, Tuesday</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: right; color: #64748b; font-size: 13px; margin-top: 10px;'>{today_str}</p>", unsafe_allow_html=True)
 
     st.write("")
 

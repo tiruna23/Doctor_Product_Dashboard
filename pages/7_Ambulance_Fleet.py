@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Ambulance Fleet", page_icon="🚑", layout="wide")
 
-# Custom CSS matching Theme & Dark Navy Blue Sidebar
+# ----------------- UNIFORM SIDEBAR & CUSTOM CSS -----------------
 st.markdown("""
 <style>
     .stApp { background-color: #f8fafc; }
@@ -15,6 +15,19 @@ st.markdown("""
         color: #f1f5f9 !important;
     }
     
+    /* Red Logout Button Styling */
+    [data-testid="stSidebar"] .stButton > button {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+        border: none !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background-color: #dc2626 !important;
+    }
+    
+    /* Page Specific Custom Cards & Badges */
     .kpi-card { background: #ffffff; border-radius: 10px; padding: 14px 18px; border: 1px solid #e2e8f0; }
     .kpi-title { font-size: 13px; color: #64748b; font-weight: 600; }
     .kpi-val { font-size: 24px; font-weight: 800; color: #0f172a; margin: 2px 0; }
@@ -32,9 +45,20 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SIDEBAR NAVIGATION -----------------
+# ----------------- UNIFORM SIDEBAR NAVIGATION -----------------
 with st.sidebar:
-    st.markdown("### 🏥 MediCare")
+    # Standard Blue MediCare Logo
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="24" rx="6" fill="#2563EB"/>
+            <path d="M8 12H16M12 8V16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <h2 style="color: white; margin: 0; font-size: 22px; font-weight: 700;">MediCare</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.caption(f"Logged in: **{st.session_state.get('current_user', 'Admin')}**")
     st.write("")
     st.caption("MAIN MENU")
     
@@ -50,6 +74,13 @@ with st.sidebar:
     st.page_link("pages/9_Billing_System.py", label="Billing System", icon="💳")
     st.page_link("pages/10_Settings.py", label="Settings", icon="⚙️")
     st.page_link("pages/11_Help_Center.py", label="Help Center", icon="❓")
+    
+    st.divider()
+    
+    # Red Logout Button
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.logged_in = False
+        st.rerun()
 
 # Session State for Ambulance Fleet Data
 if "ambulances_master" not in st.session_state:
